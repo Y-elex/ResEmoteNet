@@ -3,6 +3,12 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 
+import sys
+from pathlib import Path
+
+# 获取当前文件的父目录的父目录（即上上级目录）
+parent_dir = str(Path(__file__).parent.parent)
+sys.path.append(parent_dir)  # 临时添加路径
 from torch.utils.data import DataLoader
 from torchvision import transforms
 import torch.optim as optim
@@ -10,6 +16,7 @@ import matplotlib.pyplot as plt
 
 from approach.ResEmoteNet import ResEmoteNet
 from get_dataset import Four4All
+
 
 device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 print(f"Using {device} device")
@@ -28,19 +35,19 @@ transform = transforms.Compose([
 
 # Load the dataset
 train_dataset = Four4All(csv_file='data/train_labels.csv',
-                         img_dir='data/train', transform=transform)
+                         img_dir='data/FER-2013/train', transform=transform)
 train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
 train_image, train_label = next(iter(train_loader))
 
 
-val_dataset = Four4All(csv_file='data/valid_labels.csv', 
-                       img_dir='data/valid/', transform=transform)
+val_dataset = Four4All(csv_file='data/val_labels.csv', 
+                       img_dir='data/FER-2013/val', transform=transform)
 val_loader = DataLoader(val_dataset, batch_size=16, shuffle=True)
 val_image, val_label = next(iter(val_loader))
 
 
 test_dataset = Four4All(csv_file='data/test_labels.csv', 
-                        img_dir='data/test', transform=transform)
+                        img_dir='data/FER-2013/test', transform=transform)
 test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 test_image, test_label = next(iter(test_loader))
 
@@ -76,6 +83,7 @@ train_accuracies = []
 val_accuracies = []
 test_losses = []
 test_accuracies = []
+epoch_list = []
 
 # Start training
 for epoch in range(num_epochs):
@@ -121,6 +129,7 @@ for epoch in range(num_epochs):
     test_acc = test_correct / test_total
     test_losses.append(test_loss)
     test_accuracies.append(test_acc)
+    epoch_list.append(epoch)
 
     model.eval()
     val_running_loss = 0.0
@@ -140,6 +149,32 @@ for epoch in range(num_epochs):
     val_acc = val_correct / val_total
     val_losses.append(val_loss)
     val_accuracies.append(val_acc)
+
+    plt.figure(figsize=(12, 5))
+
+    # 准确率图
+    plt.subplot(1, 2, 1)
+    plt.plot(epoch_list, train_acc, label='Train Accuracy')
+    plt.plot(epoch_list, test_acc, label='Test Accuracy')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy (%)')
+    plt.title('Epoch vs Accuracy')
+    plt.legend()
+    plt.grid(True)
+
+    # 损失图
+    plt.subplot(1, 2, 2)
+    plt.plot(epoch_list, train_loss, label='Train Loss')
+    plt.plot(epoch_list, test_loss, label='Test Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.title('Epoch vs Loss')
+    plt.legend()
+    plt.grid(True)
+
+    plt.tight_layout()
+    plt.savefig('results/accuracy_loss_plot.png')
+    plt.show()
 
     print(f"Epoch {epoch+1}, Train Loss: {train_loss}, Train Accuracy: {train_acc}, Test Loss: {test_loss}, Test Accuracy: {test_acc}, Validation Loss: {val_loss}, Validation Accuracy: {val_acc}")
     epoch_counter += 1
