@@ -150,6 +150,17 @@ for epoch in range(num_epochs):
     val_losses.append(val_loss)
     val_accuracies.append(val_acc)
 
+    # 创建一个 DataFrame
+    df = pd.DataFrame({
+        'epoch': epoch_list,
+        'train_acc': train_acc,
+        'val_acc': val_acc,
+        'train_loss': train_loss,
+        'val_loss': val_loss
+    })
+
+    # 保存为 Excel 文件
+    df.to_excel('training_log.xlsx', index=False)
     plt.figure(figsize=(12, 5))
 
     # 准确率图
